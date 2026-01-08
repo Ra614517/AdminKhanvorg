@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHANG VIP - Add User</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #f72585; --secondary: #4cc9f0; --dark-bg: #0f0f1a; --card-bg: rgba(255, 255, 255, 0.05); }
+    body { font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: white; padding: 20px; }
+    .card { background: var(--card-bg); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); max-width: 500px; margin: auto; }
+    .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; margin-bottom: 15px; box-sizing: border-box; }
+    .btn-add { width: 100%; background: linear-gradient(45deg, var(--primary), #b5179e); border: none; padding: 15px; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; }
+    label { color: var(--secondary); font-size: 13px; margin-bottom: 5px; display: block; }
+    .inf-check { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; cursor: pointer; font-size: 14px; color: #ffeb3b; }
+    .tab-group { display: flex; gap: 10px; margin-bottom: 10px; }
+    .tab-btn { flex: 1; padding: 8px; font-size: 11px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 5px; cursor: pointer; }
+    .tab-btn.active { background: var(--secondary); color: black; border: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="text-align:center; color: var(--primary); margin-bottom: 25px;">CREATE PREMIUM KEY</h2>
+    
+    <label>Username</label>
+    <input type="text" id="user" class="form-control" placeholder="Enter Username">
+    
+    <label>Password</label>
+    <input type="text" id="pass" class="form-control" placeholder="Enter Password">
+    
+    <label>Validity Option</label>
+    <div class="tab-group">
+        <button class="tab-btn active" id="btnCal" onclick="switchInput('cal')">CALENDAR</button>
+        <button class="tab-btn" id="btnDay" onclick="switchInput('day')">DAYS (MANUAL)</button>
+    </div>
+
+    <div id="calInput">
+        <input type="datetime-local" id="valid" class="form-control">
+    </div>
+    <div id="dayInput" style="display:none;">
+        <input type="number" id="manualDays" class="form-control" placeholder="Enter number of days (e.g. 30)">
+    </div>
+    
+    <label class="inf-check">
+        <input type="checkbox" id="isInfinity" onchange="toggleDate(this)"> Lifetime Access (Infinity Date)
+    </label>
+    
+    <label>User Type</label>
+    <select id="userType" class="form-control">
+        <option value="paid">Premium User</option>
+        <option value="reseller">Reseller</option>
+    </select>
+
+    <div id="resellerExtra" style="display:none;">
+        <label>Initial Credits</label>
+        <input type="number" id="credits" class="form-control" placeholder="Enter Credits" value="0">
+    </div>
+
+    <label>Device Access</label>
+    <select id="access" class="form-control">
+        <option value="1">1 Device Only</option>
+        <option value="∞">Unlimited Devices</option>
+    </select>
+
+    <button id="addBtn" class="btn-add">GENERATE USER</button>
+    <br><br>
+    <center><a href="index.html" style="color: var(--secondary); text-decoration: none; font-size: 14px;">Back to Dashboard</a></center>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, set } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    let inputMode = 'cal';
+
+    window.switchInput = (mode) => {
+        inputMode = mode;
+        document.getElementById('calInput').style.display = mode === 'cal' ? 'block' : 'none';
+        document.getElementById('dayInput').style.display = mode === 'day' ? 'block' : 'none';
+        document.getElementById('btnCal').classList.toggle('active', mode === 'cal');
+        document.getElementById('btnDay').classList.toggle('active', mode === 'day');
+    };
+
+    window.toggleDate = (el) => {
+        const cal = document.getElementById('valid');
+        const day = document.getElementById('manualDays');
+        const btns = document.querySelectorAll('.tab-btn');
+        if(el.checked) {
+            cal.disabled = day.disabled = true;
+            document.getElementById('calInput').style.opacity = document.getElementById('dayInput').style.opacity = "0.3";
+        } else {
+            cal.disabled = day.disabled = false;
+            document.getElementById('calInput').style.opacity = document.getElementById('dayInput').style.opacity = "1";
+        }
+    };
+
+    document.getElementById('userType').onchange = (e) => {
+        document.getElementById('resellerExtra').style.display = e.target.value === 'reseller' ? 'block' : 'none';
+    };
+
+    document.getElementById('addBtn').onclick = () => {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        const v = document.getElementById('valid').value;
+        const mDays = document.getElementById('manualDays').value;
+        const a = document.getElementById('access').value;
+        const type = document.getElementById('userType').value;
+        const cr = document.getElementById('credits').value;
+        const isInf = document.getElementById('isInfinity').checked;
+
+        if(!u || !p) return alert("Fill Username and Password!");
+
+        let fmt;
+        if(isInf) {
+            fmt = "01-01-2099 00:00";
+        } else if(inputMode === 'day') {
+            if(!mDays) return alert("Enter number of days!");
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + parseInt(mDays));
+            fmt = `${String(targetDate.getDate()).padStart(2,'0')}-${String(targetDate.getMonth()+1).padStart(2,'0')}-${targetDate.getFullYear()} ${String(targetDate.getHours()).padStart(2,'0')}:${String(targetDate.getMinutes()).padStart(2,'0')}`;
+        } else {
+            if(!v) return alert("Select Date from Calendar!");
+            const d = new Date(v);
+            fmt = `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+        
+        const path = type === 'reseller' ? `resellers/${u}` : `userinfo/${u}`;
+        const data = {
+            username: u, password: p, validity: fmt, 
+            status: "active", type: type, rgtime: new Date().toLocaleString()
+        };
+
+        if(type === 'reseller') {
+            data.credits = parseInt(cr) || 0;
+        } else {
+            data.access = a;
+            data.device = "null";
+        }
+
+        set(ref(db, path), data).then(() => {
+            alert(isInf ? "Lifetime User Created!" : "User Created!");
+            location.href = "dashboard.html";
+        });
+    };
+  </script>
+</body>
+</html>

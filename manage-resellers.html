@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHANG VIP - Manage Resellers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #f72585; --secondary: #4cc9f0; --dark-bg: #0f0f1a; --card-bg: rgba(255, 255, 255, 0.05); }
+    body { font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: white; padding: 20px; }
+    .card { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); max-width: 900px; margin: auto; }
+    .khang-logo { font-size: 24px; font-weight: 800; margin-bottom: 20px; text-align: center; letter-spacing: 2px; }
+    .khang-logo b { color: var(--primary); } .khang-logo span { color: var(--secondary); }
+    input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; color: white; margin-bottom: 10px; }
+    .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: 600; transition: 0.3s; }
+    .btn-add { background: var(--primary); box-shadow: 0 4px 15px rgba(247, 37, 133, 0.3); }
+    table { width: 100%; border-collapse: collapse; margin-top: 25px; font-size: 14px; }
+    th { text-align: left; color: var(--secondary); padding: 15px; border-bottom: 2px solid rgba(255,255,255,0.1); }
+    td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .badge { background: rgba(76, 201, 240, 0.2); color: var(--secondary); padding: 5px 12px; border-radius: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="khang-logo"><b>KHANG</b> <span>VIP</span></div>
+    <h3 style="margin-bottom: 20px;"><i class="fas fa-user-tie"></i> Reseller Control Panel</h3>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+      <input type="text" id="resName" placeholder="Username" style="flex: 1;">
+      <input type="text" id="resPass" placeholder="Password" style="flex: 1;">
+      <input type="number" id="resCredit" placeholder="Credits" style="width: 120px;">
+      <button onclick="addReseller()" class="btn btn-add">ADD RESELLER</button>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead><tr><th>RESELLER</th><th>PASSWORD</th><th>CREDITS</th><th>ACTIONS</th></tr></thead>
+        <tbody id="resellerTableBody"></tbody>
+      </table>
+    </div>
+    <br>
+    <a href="index.html" style="text-decoration:none; color:var(--secondary); font-size: 14px;"><i class="fas fa-arrow-left"></i> BACK TO DASHBOARD</a>
+  </div>
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, set, get, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+    window.addReseller = async () => {
+      const name = document.getElementById('resName').value.trim();
+      const pass = document.getElementById('resPass').value.trim();
+      const credit = parseInt(document.getElementById('resCredit').value);
+      if(!name || !pass || isNaN(credit)) return alert("Please fill everything!");
+      await set(ref(db, `resellers/${name}`), { username: name, password: pass, credits: credit });
+      alert("Reseller Added!");
+      document.getElementById('resName').value = ''; document.getElementById('resPass').value = ''; document.getElementById('resCredit').value = '';
+    };
+    onValue(ref(db, 'resellers'), (snap) => {
+      const tbody = document.getElementById('resellerTableBody');
+      tbody.innerHTML = '';
+      const data = snap.val();
+      for(let key in data) {
+        tbody.innerHTML += `
+          <tr>
+            <td><b style="color:white">${data[key].username}</b></td>
+            <td style="color: #aaa">${data[key].password}</td>
+            <td><span class="badge">${data[key].credits}</span></td>
+            <td>
+              <button onclick="topUp('${key}')" class="btn" style="background:var(--secondary); padding: 5px 10px; color:black"><i class="fas fa-plus"></i></button>
+              <button onclick="delRes('${key}')" class="btn" style="background:var(--primary); padding: 5px 10px;"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>`;
+      }
+    });
+    window.topUp = async (n) => {
+      const amt = prompt("How many credits to add?");
+      if(!amt || isNaN(amt)) return;
+      const r = ref(db, `resellers/${n}`);
+      const s = await get(r);
+      await update(r, { credits: (s.val().credits || 0) + parseInt(amt) });
+    };
+    window.delRes = (n) => { if(confirm("Delete this reseller?")) remove(ref(db, `resellers/${n}`)); };
+  </script>
+</body>
+</html>

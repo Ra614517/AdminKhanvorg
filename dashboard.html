@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHANG VIP - Pro Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #f72585; --secondary: #4cc9f0; --dark-bg: #0f0f1a; --card-bg: rgba(255, 255, 255, 0.05); }
+    body { font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: white; margin: 0; }
+    .header { background: rgba(0,0,0,0.5); padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; position: fixed; top:0; width: 100%; z-index: 1000; backdrop-filter: blur(10px); }
+    .khang-logo b { color: var(--primary); } .khang-logo span { color: var(--secondary); }
+    .main-content { padding: 100px 20px 20px; max-width: 1200px; margin: auto; }
+    .card { background: var(--card-bg); border-radius: 15px; padding: 20px; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1); }
+    
+    .user-card { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--secondary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.3s; user-select: none; }
+    .user-card:active { transform: scale(0.98); }
+
+    .btn { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
+    .btn-danger { background: var(--primary); color: white; }
+    .btn-success { background: var(--secondary); color: black; }
+    .btn-info { background: #ffffff; color: black; }
+    
+    .btn-global { width: 100%; margin-top: 10px; padding: 14px; font-size: 15px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; border:none; cursor:pointer; }
+    .status-paused { background: linear-gradient(45deg, #ff4b2b, #ff416c); color: white; }
+    .status-active { background: linear-gradient(45deg, #00b09b, #96c93d); color: white; }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(12px); }
+    .modal-content { background: #1a1a2e; width: 85%; max-width: 380px; padding: 25px; border-radius: 25px; border: 1px solid var(--secondary); transform: scale(0.8); opacity: 0; transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+    .modal.active .modal-content { transform: scale(1); opacity: 1; }
+    .detail-item { margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+    .countdown-box { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 15px; border: 1px solid var(--primary); text-align: center; margin-top: 15px; }
+    
+    table { width: 100%; color: white; border-collapse: collapse; }
+    th { color: var(--secondary); text-align: left; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .res-card { border-left: 4px solid var(--primary); }
+    .credit-badge { background: var(--primary); padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="khang-logo"><b>KHANG</b> <span>VIP</span></div>
+    <a href="index.html" style="color: white; text-decoration: none;"><i class="fas fa-home"></i></a>
+  </header>
+
+  <main class="main-content">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div><h3 id="statusText">Link Status</h3></div>
+        <button id="toggleBtn" onclick="controlLink()" class="btn">TOGGLE</button>
+      </div>
+      <button id="globalPauseBtn" class="btn btn-global" onclick="globalPauseToggle()">
+        <i id="pauseIcon" class="fas fa-pause"></i> <span id="pauseBtnText">SYNCING...</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <h2 style="color: var(--secondary); margin-bottom: 20px;"><i class="fas fa-crown"></i> Paid Users <small style="font-size:10px; color:#555">(Hold card for Info)</small></h2>
+      <div id="userList">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2 style="color: #ff9f43; margin-bottom: 20px;"><i class="fas fa-users-cog"></i> Reseller Manager <small style="font-size:10px; color:#555">(Long Press for Users)</small></h2>
+      <div id="resellerList">Loading...</div>
+    </div>
+
+    <div class="card" style="border-top: 3px solid var(--primary);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="color: var(--primary);"><i class="fas fa-hourglass-half"></i> Trial Manager</h2>
+        <button class="btn btn-danger" onclick="clearAllTrials()"><i class="fas fa-trash"></i> CLEAR ALL</button>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead><tr><th>User</th><th>Password</th><th>Expiry</th><th>Action</th></tr></thead>
+          <tbody id="trialListBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="detailModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h3 id="mTitle" style="color: var(--secondary); text-align: center; margin-top:0;">USER DETAILS</h3>
+      <div id="modalBody">
+          </div>
+      <button class="btn btn-danger" style="width:100%; margin-top:20px; padding:12px;" onclick="closeModal()">CLOSE</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, get, update, remove, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    let countdownInterval;
+
+    // 1. Pause/Resume Global Sync
+    onValue(ref(db, 'userinfo'), (snap) => {
+        if (!snap.exists()) return;
+        const users = snap.val();
+        const firstUser = Object.values(users).find(u => u.type !== "trial");
+        const isPaused = firstUser ? (firstUser.isPaused || false) : false;
+        const btn = document.getElementById('globalPauseBtn');
+        const icon = document.getElementById('pauseIcon');
+        const text = document.getElementById('pauseBtnText');
+
+        if(isPaused) {
+            btn.className = "btn btn-global status-paused";
+            icon.className = "fas fa-play";
+            text.innerText = "RESUME ALL USERS";
+        } else {
+            btn.className = "btn btn-global status-active";
+            icon.className = "fas fa-pause";
+            text.innerText = "PAUSE ALL USERS";
+        }
+    });
+
+    window.globalPauseToggle = async () => {
+        const snap = await get(ref(db, 'userinfo'));
+        if(!snap.exists()) return;
+        const users = snap.val();
+        const firstPaid = Object.values(users).find(u => u.type !== "trial");
+        const nextState = !(firstPaid && firstPaid.isPaused);
+        const updates = {};
+        Object.keys(users).forEach(u => updates[`userinfo/${u}/isPaused`] = nextState);
+        await update(ref(db), updates);
+    };
+
+    // 2. Link Toggle
+    onValue(ref(db, 'settings/public_gen'), (snap) => {
+        const s = snap.val() || "off";
+        const btn = document.getElementById('toggleBtn');
+        btn.className = s === "on" ? "btn btn-danger" : "btn btn-success";
+        btn.innerText = s === "on" ? "TURN OFF" : "TURN ON";
+    });
+
+    window.controlLink = async () => {
+        const snap = await get(ref(db, 'settings/public_gen'));
+        await update(ref(db, 'settings'), { public_gen: (snap.val()==="on"?"off":"on") });
+    };
+
+    // 3. Load Paid Users
+    onValue(ref(db, "userinfo"), (snapshot) => {
+        const list = document.getElementById('userList');
+        list.innerHTML = '';
+        if (snapshot.exists()) {
+            Object.entries(snapshot.val()).forEach(([name, user]) => {
+                if(user.type === "trial" || name.startsWith("TRIAL-")) return;
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `<div><b>${name}</b><br><small>${user.isPaused ? '🔴 Paused' : '🟢 Active'}</small></div>
+                <div><button class="btn btn-info" onclick="event.stopPropagation(); resetHWID('${name}')"><i class="fas fa-redo"></i></button>
+                <button class="btn btn-danger" onclick="event.stopPropagation(); deleteUser('${name}')"><i class="fas fa-trash"></i></button></div>`;
+                
+                let t;
+                card.onmousedown = card.ontouchstart = () => { t = setTimeout(() => openDetails(name, user), 700); };
+                card.onmouseup = card.onmouseleave = card.ontouchend = () => { clearTimeout(t); };
+                list.appendChild(card);
+            });
+        }
+    });
+
+    // 4. Load Resellers & Long Press for Users
+    onValue(ref(db, 'resellers'), (snapshot) => {
+        const list = document.getElementById('resellerList');
+        list.innerHTML = "";
+        if (snapshot.exists()) {
+            Object.entries(snapshot.val()).forEach(([id, res]) => {
+                const card = document.createElement('div');
+                card.className = 'user-card res-card';
+                card.innerHTML = `<div><b>${id}</b> <span class="credit-badge">${res.credits} Cr</span></div>
+                <div><button class="btn btn-success" onclick="event.stopPropagation(); modCredit('${id}', ${res.credits})">EDIT</button>
+                <button class="btn btn-danger" onclick="event.stopPropagation(); delRes('${id}')">X</button></div>`;
+                
+                let t;
+                card.onmousedown = card.ontouchstart = () => { t = setTimeout(() => showResellerUsers(id), 800); };
+                card.onmouseup = card.onmouseleave = card.ontouchend = () => { clearTimeout(t); };
+                list.appendChild(card);
+            });
+        }
+    });
+
+    // Show users created by specific reseller
+    window.showResellerUsers = async (resId) => {
+        const snap = await get(ref(db, 'userinfo'));
+        const modal = document.getElementById('detailModal');
+        const body = document.getElementById('modalBody');
+        document.getElementById('mTitle').innerText = "USERS BY: " + resId;
+        
+        let userHTML = `<div style="max-height:300px; overflow-y:auto;">`;
+        let count = 0;
+        if(snap.exists()){
+            Object.entries(snap.val()).forEach(([name, user]) => {
+                if(user.owner === resId) {
+                    count++;
+                    userHTML += `<div class="detail-item">${count}. ${name} <small>(${user.validity})</small></div>`;
+                }
+            });
+        }
+        userHTML += count === 0 ? "No users found." : "";
+        userHTML += `</div>`;
+        body.innerHTML = userHTML;
+        
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+    };
+
+    // Credit Edit Logic
+    window.modCredit = async (id, current) => {
+        const val = prompt(`Manage Credits for ${id}\n(Current: ${current})\nUse +50 to add, -20 to remove:`);
+        if(!val) return;
+        let newTotal = current;
+        if(val.startsWith('+')) newTotal += parseInt(val.substring(1));
+        else if(val.startsWith('-')) newTotal -= parseInt(val.substring(1));
+        else newTotal = parseInt(val);
+        
+        if(!isNaN(newTotal)) await update(ref(db, `resellers/${id}`), { credits: newTotal });
+    };
+
+    // 5. Load Trial Users
+    onValue(ref(db, 'trial_users'), (snapshot) => {
+        const body = document.getElementById('trialListBody');
+        body.innerHTML = "";
+        if (snapshot.exists()) {
+            snapshot.forEach((child) => {
+                const v = child.val();
+                body.innerHTML += `<tr>
+                    <td>${v.username}</td>
+                    <td>${v.password}</td>
+                    <td>${v.validity}</td>
+                    <td><button class="btn btn-danger" onclick="deleteTrial('${child.key}','${v.username}')">X</button></td>
+                </tr>`;
+            });
+        }
+    });
+
+    // 6. User Details Modal
+    window.openDetails = (name, user) => {
+        const modal = document.getElementById('detailModal');
+        const body = document.getElementById('modalBody');
+        document.getElementById('mTitle').innerText = name;
+        
+        body.innerHTML = `
+            <div class="detail-item"><small style="color:var(--secondary)">DEVICE ID / NAME</small><div style="word-break: break-all;">${user.device_name || user.device_id || "NOT BOUND"}</div></div>
+            <div class="detail-item"><small style="color:var(--secondary)">PASSWORD</small><div>${user.password || "N/A"}</div></div>
+            <div class="detail-item"><small style="color:var(--secondary)">EXPIRY DATE</small><div>${user.validity}</div></div>
+            <div class="countdown-box">
+                <small style="color:var(--primary)">TIME REMAINING</small>
+                <div id="mRemaining" style="font-size: 20px; font-weight: 800; font-family: monospace;">00d 00h 00m 00s</div>
+            </div>`;
+        
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+
+        if(countdownInterval) clearInterval(countdownInterval);
+        const updateT = () => {
+            const expiryStr = user.validity.replace(/-/g, "/");
+            const expiryTime = new Date(expiryStr).getTime();
+            const now = new Date().getTime();
+            const diff = expiryTime - now;
+            const remEl = document.getElementById('mRemaining');
+            if(!remEl) return;
+
+            if (user.isPaused) { remEl.innerText = "PAUSED"; return; }
+            if (isNaN(diff) || diff <= 0) { remEl.innerText = "EXPIRED"; return; }
+
+            const d = Math.floor(diff/(1000*60*60*24));
+            const h = Math.floor((diff%(1000*60*60*24))/(1000*60*60));
+            const m = Math.floor((diff%(1000*60*60))/(1000*60));
+            const s = Math.floor((diff%(1000*60))/1000);
+            remEl.innerText = `${d}d ${h}h ${m}m ${s}s`;
+        };
+        updateT();
+        countdownInterval = setInterval(updateT, 1000);
+    };
+
+    window.closeModal = () => {
+        document.getElementById('detailModal').classList.remove('active');
+        setTimeout(() => document.getElementById('detailModal').style.display='none', 300);
+        if(countdownInterval) clearInterval(countdownInterval);
+    };
+
+    window.resetHWID = async (n) => { if(confirm(`Reset ${n}?`)) await update(ref(db, `userinfo/${n}`), {device_id:"", device_name:""}); };
+    window.deleteUser = async (n) => { if(confirm(`Delete ${n}?`)) await remove(ref(db, `userinfo/${n}`)); };
+    window.delRes = async (id) => { if(confirm(`Delete Reseller ${id}?`)) await remove(ref(db, `resellers/${id}`)); };
+    window.deleteTrial = async (k, n) => { if(confirm(`Delete ${n}?`)) { await remove(ref(db, `trial_users/${k}`)); await remove(ref(db, `userinfo/${n}`)); }};
+    window.clearAllTrials = async () => { if(confirm("Clear All?")) { const s = await get(ref(db, 'trial_users')); if(s.exists()){ for(let k in s.val()) await remove(ref(db, `userinfo/${s.val()[k].username}`)); await remove(ref(db, 'trial_users')); } } };
+  </script>
+</body>
+</html>

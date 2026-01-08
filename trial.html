@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHANG VIP - Trial Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #f72585;
+            --secondary: #4cc9f0;
+            --dark: #0f0f1a;
+        }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        
+        .card { 
+            background: rgba(255, 255, 255, 0.03); 
+            padding: 30px; 
+            border-radius: 25px; 
+            text-align: center; 
+            border: 1px solid rgba(247, 37, 133, 0.3); 
+            width: 100%;
+            max-width: 380px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .logo-text span { color: var(--secondary); }
+        .logo-text b { color: var(--primary); }
+
+        .btn-gen { 
+            background: linear-gradient(45deg, #f72585, #b5179e);
+            color: white; border: none; padding: 16px; width: 100%; border-radius: 12px; 
+            font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.4s;
+            box-shadow: 0 5px 15px rgba(247, 37, 133, 0.4);
+            margin-top: 20px;
+        }
+        .btn-gen:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(247, 37, 133, 0.6); }
+        .btn-gen:disabled { background: #444; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* Premium Buy Button */
+        .btn-buy {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            background: rgba(76, 201, 240, 0.1);
+            color: var(--secondary);
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid var(--secondary);
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        .btn-buy:hover {
+            background: var(--secondary);
+            color: var(--dark);
+        }
+
+        #key-box { 
+            margin-top: 25px; display: none; background: rgba(0,0,0,0.5); 
+            padding: 20px; border-radius: 15px; border: 1px dashed var(--secondary); 
+            animation: fadeIn 0.5s; 
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="logo-text"><b>KHANG</b> <span>VIP</span></div>
+    <p style="color: #888; font-size: 12px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px;">Premium Injector Solution</p>
+    
+    <i class="fas fa-bolt" style="font-size: 45px; color: #f1c40f; margin-bottom: 15px; filter: drop-shadow(0 0 10px #f1c40f);"></i>
+    <h3 style="margin: 0; font-size: 20px;">Free Trial Access</h3>
+    <p style="color: #aaa; font-size: 13px; margin-top: 8px;">Generate your 2-hour premium key</p>
+    
+    <button id="genBtn" onclick="generateAndSecure()" class="btn-gen">
+        <i class="fas fa-key"></i> GENERATE & COPY KEY
+    </button>
+
+    <a href="https://t.me/Khangvip05" target="_blank" class="btn-buy">
+        <i class="fab fa-telegram-plane"></i> BUY PREMIUM KEY (NO ADS)
+    </a>
+
+    <div id="key-box">
+        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">CREDENTIALS GENERATED:</div>
+        <p id="userD" style="color: var(--secondary); font-family: monospace; font-size: 18px; font-weight: bold; margin: 5px 0;"></p>
+        <p id="passD" style="color: var(--secondary); font-family: monospace; font-size: 18px; font-weight: bold; margin: 5px 0;"></p>
+        <div style="margin-top: 10px; background: var(--primary); font-size: 11px; padding: 4px 10px; border-radius: 20px; display: inline-block;">AUTO-COPIED</div>
+    </div>
+</div>
+
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    // Generator Status Sync
+    onValue(ref(db, 'settings/public_gen'), (snap) => {
+        const btn = document.getElementById('genBtn');
+        if(snap.val() === "off") {
+            btn.innerText = "MAINTENANCE MODE";
+            btn.disabled = true;
+            btn.style.background = "#333";
+            btn.style.boxShadow = "none";
+        } else {
+            btn.disabled = false;
+            btn.innerText = "GENERATE & COPY KEY";
+        }
+    });
+
+    window.generateAndSecure = async () => {
+        const btn = document.getElementById('genBtn');
+        
+        // Safety Check
+        const statusSnap = await get(ref(db, 'settings/public_gen'));
+        if (statusSnap.val() === "off") {
+            Swal.fire("Closed", "Generator is currently disabled!", "error");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Generating...";
+
+        const user = "TRIAL-" + Math.floor(1000 + Math.random() * 9000);
+        const pass = Math.floor(100 + Math.random() * 899).toString();
+        
+        let exp = new Date();
+        exp.setHours(exp.getHours() + 2);
+        const expStr = `${String(exp.getDate()).padStart(2, '0')}-${String(exp.getMonth() + 1).padStart(2, '0')}-${exp.getFullYear()} ${String(exp.getHours()).padStart(2, '0')}:${String(exp.getMinutes()).padStart(2, '0')}`;
+
+        try {
+            const trialData = {
+                username: user, password: pass, device: "null", status: "active",
+                validity: expStr, type: "trial", rgtime: new Date().toLocaleString()
+            };
+
+            await set(ref(db, `userinfo/${user}`), trialData);
+            await set(ref(db, `trial_users/${user}`), trialData);
+
+            document.getElementById('key-box').style.display = "block";
+            document.getElementById('userD').innerText = user;
+            document.getElementById('passD').innerText = pass;
+
+            // Auto Copy
+            const copyText = `User: ${user}\nPass: ${pass}`;
+            await navigator.clipboard.writeText(copyText);
+
+            Swal.fire({
+                title: "Key Copied!",
+                text: "Login in your app now. Redirecting...",
+                icon: "success",
+                timer: 4000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = "https://t.me/Khangvip05"; 
+            });
+
+        } catch (e) {
+            btn.disabled = false;
+            btn.innerText = "TRY AGAIN";
+            Swal.fire("Error", "Server Busy!", "error");
+        }
+    };
+</script>
+</body>
+</html>

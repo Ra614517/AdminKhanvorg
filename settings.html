@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHANG VIP - Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #f72585; --secondary: #4cc9f0; --dark-bg: #0f0f1a; --card-bg: rgba(255, 255, 255, 0.05); }
+    body { font-family: 'Poppins', sans-serif; background: var(--dark-bg); color: white; padding: 20px; }
+    .card { background: var(--card-bg); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); max-width: 600px; margin: auto; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: var(--secondary); font-size: 14px; }
+    .form-control { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; box-sizing: border-box; }
+    .btn-save { width: 100%; background: var(--primary); border: none; padding: 15px; color: white; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+    .btn-save:hover { background: #b5179e; }
+    /* Toggle Switch */
+    .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--secondary); }
+    input:checked + .slider:before { transform: translateX(26px); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="text-align:center; margin-bottom:20px;">
+        <h2 style="color: var(--primary); letter-spacing: 2px;">KHANG VIP</h2>
+        <p style="font-size: 12px; color: #888;">SYSTEM CONFIGURATION</p>
+    </div>
+
+    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;">
+        <span>Maintenance Mode</span>
+        <label class="switch">
+            <input type="checkbox" id="mMode">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="form-group">
+      <label>App Version</label>
+      <input type="text" id="vIn" class="form-control" placeholder="e.g. 1.0.5">
+    </div>
+    <div class="form-group">
+      <label>Update Message</label>
+      <input type="text" id="mIn" class="form-control" placeholder="What's new?">
+    </div>
+    <div class="form-group">
+      <label>Update Link</label>
+      <input type="text" id="lIn" class="form-control" placeholder="https://t.me/...">
+    </div>
+
+    <button onclick="saveSet()" class="btn-save"><i class="fas fa-save"></i> SAVE ALL SETTINGS</button>
+    <br><br>
+    <center><a href="index.html" style="color: var(--secondary); text-decoration: none; font-size: 14px;">Back to Home</a></center>
+  </div>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, onValue, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const path = ref(db, 'settings/appupdate');
+    onValue(path, (snap) => {
+      const d = snap.val();
+      if(d) {
+        document.getElementById('mMode').checked = d.maintenanceMode === 'true';
+        document.getElementById('vIn').value = d.version || '';
+        document.getElementById('mIn').value = d.message || '';
+        document.getElementById('lIn').value = d.link || '';
+      }
+    });
+
+    window.saveSet = () => {
+      const data = {
+        maintenanceMode: document.getElementById('mMode').checked ? 'true' : 'false',
+        version: document.getElementById('vIn').value,
+        message: document.getElementById('mIn').value,
+        link: document.getElementById('lIn').value
+      };
+      update(path, data).then(() => alert("Settings Updated!"));
+    };
+  </script>
+</body>
+</html>
