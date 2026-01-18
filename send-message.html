@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KHANG VIP - Send Notif</title>
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #0f0f1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); width: 350px; }
+        input, textarea { width: 100%; margin-bottom: 15px; padding: 10px; border-radius: 10px; border: none; background: rgba(0,0,0,0.3); color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #f72585; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="text-align: center; color: #4cc9f0;">SEND NOTIFICATION</h2>
+        <input type="text" id="projId" placeholder="Firebase Project ID (e.g. codkhang)">
+        <input type="text" id="title" placeholder="Notification Title">
+        <textarea id="msg" rows="3" placeholder="Message Body"></textarea>
+        <input type="text" id="img" placeholder="Image URL (Optional)">
+        <button onclick="sendViaConsole()">SEND NOW</button>
+        <p style="font-size: 11px; text-align: center; color: #aaa; margin-top: 10px;">Note: Direct Console Method</p>
+    </div>
+
+    <script>
+        function sendViaConsole() {
+            const projId = document.getElementById('projId').value;
+            const title = document.getElementById('title').value;
+            const msg = document.getElementById('msg').value;
+
+            if(!projId || !title || !msg) {
+                alert("Please fill Project ID, Title and Message!");
+                return;
+            }
+
+            // Direct Link to Firebase Console Messaging (The most direct way)
+            const url = `https://console.firebase.google.com/project/${projId}/messaging/compose`;
+            
+            alert("Redirecting to Firebase Direct Messaging. Just Paste Title & Message there and click Publish!");
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>

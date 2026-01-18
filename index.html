@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KHANG VIP - Premium Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --primary: #f72585; --secondary: #4cc9f0; --dark-bg: #0f0f1a; --card-bg: rgba(255, 255, 255, 0.05); --text-white: #ffffff; --text-gray: #a0a0a0; --glass-border: rgba(255, 255, 255, 0.1); }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background-color: var(--dark-bg); color: var(--text-white); overflow-x: hidden; }
+    
+    /* 📱 Mobile Responsive Header & Sidebar */
+    .header { background: rgba(15, 15, 26, 0.8); backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border); padding: 12px 20px; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: #161625; padding-top: 80px; transition: 0.4s; z-index: 900; border-right: 1px solid var(--glass-border); }
+    .sidebar.active { left: -260px; }
+    .main-content { margin-left: 260px; padding: 100px 30px 30px; transition: 0.4s; }
+    .main-content.full-width { margin-left: 0; }
+
+    /* 🔍 Search Bar Style */
+    .search-container { position: relative; margin-bottom: 25px; width: 100%; }
+    .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); padding: 15px 45px; border-radius: 15px; color: white; font-family: inherit; transition: 0.3s; }
+    .search-input:focus { border-color: var(--secondary); outline: none; box-shadow: 0 0 15px rgba(76, 201, 240, 0.2); }
+    .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-gray); }
+
+    /* User Cards & Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .stat-card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 20px; border-radius: 20px; text-align: center; }
+    .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .user-card { background: rgba(0,0,0,0.3); border-radius: 18px; padding: 20px; border: 1px solid var(--glass-border); position: relative; }
+
+    /* ⏳ Validity Extender Button */
+    .extend-btn { background: rgba(76, 201, 240, 0.1); border: 1px solid var(--secondary); color: var(--secondary); padding: 5px 12px; border-radius: 8px; font-size: 11px; cursor: pointer; transition: 0.3s; }
+    .extend-btn:hover { background: var(--secondary); color: black; }
+
+    .status-badge { font-size: 10px; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+    .status-active { background: rgba(76, 201, 240, 0.2); color: var(--secondary); }
+    
+    @media (max-width: 768px) {
+      .sidebar { left: -260px; }
+      .sidebar.active { left: 0; }
+      .main-content { margin-left: 0; padding: 90px 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div style="display:flex; align-items:center; gap:15px;">
+      <button onclick="toggleSidebar()" style="background:none; border:none; color:white; font-size:20px;"><i class="fas fa-bars"></i></button>
+      <div style="font-size: 20px; font-weight:800;"><b>KHANG</b> <span style="color:var(--secondary)">VIP</span></div>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+      <a href="index.html" style="color:white; text-decoration:none; padding:12px; background:rgba(247,37,133,0.1); border-radius:10px;"><i class="fas fa-home"></i> Dashboard</a>
+      <a href="admin.html" style="color:var(--text-gray); text-decoration:none; padding:12px;"><i class="fas fa-user-plus"></i> Add User</a>
+      <a href="dashboard.html" style="color:var(--text-gray); text-decoration:none; padding:12px;"><i class="fas fa-users-cog"></i> Manage</a>
+      <a href="settings.html" style="color:var(--text-gray); text-decoration:none; padding:12px;"><i class="fas fa-cog"></i> Settings</a>
+ <a href="send-message.html" style="color:var(--text-gray); text-decoration:none; padding:12px;"><i class="fas fa-paper-plane"></i> Send Notification</a>
+    </div>
+  </aside>
+
+  <main class="main-content" id="mainContent">
+    
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search users by name or status..." onkeyup="filterUsers()">
+    </div>
+
+    <div class="stats-grid" style="margin-bottom: 30px;">
+      <div class="stat-card"><h3>TOTAL</h3><p id="totalUsers">0</p></div>
+      <div class="stat-card"><h3>ACTIVE</h3><p id="activeUsers" style="color:var(--secondary);">0</p></div>
+    </div>
+
+    <div class="user-list" id="userList">
+      </div>
+  </main>
+
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    window.toggleSidebar = () => {
+      document.getElementById('sidebar').classList.toggle('active');
+      document.getElementById('mainContent').classList.toggle('full-width');
+    };
+
+    // --- LOAD & SEARCH DATA ---
+    let allUsers = {};
+    onValue(ref(db, 'userinfo/'), (snap) => {
+      allUsers = snap.val() || {};
+      renderUsers(allUsers);
+    });
+
+    function renderUsers(data) {
+      const listEl = document.getElementById('userList');
+      listEl.innerHTML = '';
+      let stats = { total: 0, active: 0 };
+
+      Object.entries(data).forEach(([name, user]) => {
+        stats.total++;
+        if(user.status === 'active') stats.active++;
+
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.setAttribute('data-name', name.toLowerCase());
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-weight:600;">${name}</span>
+            <span class="status-badge status-active">${user.status}</span>
+          </div>
+          <div style="font-size:12px; color:var(--text-gray); margin-bottom:15px;">
+            <i class="far fa-calendar-alt"></i> Expiry: <span style="color:white;">${user.validity}</span>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="extend-btn" onclick="extendTime('${name}', '${user.validity}')"><i class="fas fa-plus-circle"></i> +24h</button>
+            <button onclick="deleteUser('${name}')" style="background:none; border:none; color:var(--primary); cursor:pointer;"><i class="fas fa-trash"></i></button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      document.getElementById('totalUsers').textContent = stats.total;
+      document.getElementById('activeUsers').textContent = stats.active;
+    }
+
+    // --- 🔍 LIVE SEARCH LOGIC ---
+    window.filterUsers = () => {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const cards = document.querySelectorAll('.user-card');
+      cards.forEach(card => {
+        const name = card.getAttribute('data-name');
+        card.style.display = name.includes(query) ? 'block' : 'none';
+      });
+    };
+
+    // --- ⏳ VALIDITY EXTENDER LOGIC ---
+    window.extendTime = async (name, currentExpiry) => {
+      let date = new Date(currentExpiry);
+      date.setHours(date.getHours() + 24); // Add 24 Hours
+      const newExpiry = date.toISOString().slice(0, 19).replace('T', ' ');
+      
+      if(confirm(`Extend 24 hours for ${name}?`)) {
+        await update(ref(db, `userinfo/${name}`), { validity: newExpiry });
+        alert("Time Extended!");
+      }
+    };
+
+    window.deleteUser = async (name) => {
+      if(confirm(`Delete ${name}?`)) {
+        await remove(ref(db, `userinfo/${name}`));
+      }
+    };
+  </script>
+</body>
+</html>
